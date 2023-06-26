@@ -7,6 +7,5 @@ namespace User_Management.Models
         public string Name { get; set; }
         //public Orgnization orgnization { get; set; }
 
-
     }
 }

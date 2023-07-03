@@ -24,9 +24,7 @@ builder.Services.AddCors(options =>
                           .AllowAnyMethod();
                       });
 });
-//builder.Services.AddMvc().AddJsonOptions(options => {
-//    options.JsonSerializerOptions.ReferenceHandler= ReferenceHandler.Preserve;
-//});
+;
 
 
 

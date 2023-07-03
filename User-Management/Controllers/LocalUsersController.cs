@@ -1,8 +1,10 @@
 ﻿using System.Security.Cryptography;
 using Azure.Core;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 using Microsoft.EntityFrameworkCore;
 using User_Management.Data;
 using User_Management.Models;
@@ -35,13 +37,18 @@ namespace User_Management.Controllers
 
         [HttpGet]
         [Route("api/search/{searchString}")]
+        // GET: api/LocalUsers
 
         public ActionResult<IEnumerable<LocalUser>> SearchlocalUsers(string searchString)
         {
+            if (_context.localUsers == null)
+            {
+                return NotFound();
+            }
             if (!string.IsNullOrEmpty(searchString))
             {
-                var query = _context.localUsers.Include(c => c.orgnization).Where(s => s.Name.Contains(searchString)
-                || s.Email.Contains(searchString)).ToList();
+                var query = _context.localUsers.Include(org => org.orgnization).Where(user => user.Name.Contains(searchString)
+                || user.Email.Contains(searchString) || user.UserName.Contains(searchString)).ToList()  ;
                 return query;
             }
             return NotFound();
@@ -68,7 +75,6 @@ namespace User_Management.Controllers
         }
 
         // PUT: api/LocalUsers/5
-        //// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut]
         [Route("api/user/{id}")]
         public async Task<IActionResult> PutLocalUser(int id, UserEditRequest updatedUser)
@@ -106,16 +112,15 @@ namespace User_Management.Controllers
 
 
 
-        //// POST: api/LocalUsers
-        //// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        
+        // POST: api/users
         [HttpPost]
         [Route("api/users")]
         public async Task<ActionResult<LocalUser>> PostLocalUser(UserRegistrationRequest request)
         {
             if (_context.localUsers.Any(u => u.Email == request.Email || u.UserName == request.UserName))
             {
-                return BadRequest("User already exists.");
+                ModelState.AddModelError("ErrorMessages", "user already Exists!");
+                return BadRequest(ModelState);
             }
 
             CreatePasswordHash(request.Password,
@@ -139,7 +144,7 @@ namespace User_Management.Controllers
 
 
 
-        //// DELETE: api/LocalUsers/5
+        // DELETE: api/users/5
         [HttpDelete]
         [Route("api/users/{id}")]
         public async Task<IActionResult> DeleteLocalUser(int id)
@@ -159,6 +164,7 @@ namespace User_Management.Controllers
 
             return NoContent();
         }
+        // DELETE: api/users/{id}/reset-password
 
         [HttpPut]
         [Route("api/users/{id}/reset-password")]
@@ -198,9 +204,6 @@ namespace User_Management.Controllers
 
         }
 
-
-
-
         private bool LocalUserExists(int id)
         {
             return (_context.localUsers?.Any(e => e.Id == id)).GetValueOrDefault();
@@ -217,9 +220,8 @@ namespace User_Management.Controllers
 
 
             }
-
-
         }
+
         private bool VerifyPasswordHash(string password, byte[] passwordHash, byte[] passwordSalt)
         {
             using (var hmac = new HMACSHA512(passwordSalt))
